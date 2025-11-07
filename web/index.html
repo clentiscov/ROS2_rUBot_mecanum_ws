@@ -211,11 +211,9 @@
 
     // ===== Config =====
     const MAP_RESOLUTION = 0.01;      // m/px
-    const ROBOT_RADIUS   = 5;         // px (només per algun cercle si cal)
-    const ROBOT_LEN_M    = 0.30;      // 30 cm (eix X, forward)
-    const ROBOT_WID_M    = 0.20;      // 20 cm (eix Y, dreta)
-    const SPEED_VECTOR_GAIN = 0.5;    // escala del vector velocitat (m per (m/s))
-
+    const ROBOT_LEN_M    = 0.30;      // 30 cm (X, forward)
+    const ROBOT_WID_M    = 0.20;      // 20 cm (Y, dreta)
+    const SPEED_VECTOR_GAIN = 0.5;    // escala vector velocitat (m per (m/s))
     const maxSpeed = 0.3;             // m/s
     const maxTurn  = 0.4;             // rad/s
     const distanceFactor = 75;        // joystick
@@ -228,10 +226,14 @@
     let mapImage = new Image();
     let latestScan = null;
 
-    // Robot pose (relatiu a la primera lectura d'odom)
+    // Pose en frame MOSTRAT (X forward, Y dreta)
     let lastRobotX = 0;
     let lastRobotY = 0;
-    let lastRobotYaw = 0;   // yaw relatiu (0 = forward alineat amb +X)
+    let lastRobotYaw = 0;   // yaw relatiu (0 = forward alineat +X)
+
+    // Pose en frame ROS (X forward, Y esquerra) relatiu al primer odom
+    let lastRobotX_ros = 0;
+    let lastRobotY_ros = 0;
 
     // Centering & orientation offset
     let odomCenterSet = false;
@@ -239,7 +241,7 @@
     let odomCenterY = 0;
 
     let yawOffsetSet = false;
-    let yawOffset = 0;      // primer yaw absolut -> definim frame local
+    let yawOffset = 0;      // primer yaw absolut
 
     function getRosbridgeAddress() {
       const currentUrl = window.location.href;
@@ -359,32 +361,42 @@
           yawOffsetSet = true;
         }
 
-        // Coordenades relatives en el nou frame:
-        // origen = (primer odom), orientació 0 = yaw inicial
-        const dx = position.x - odomCenterX;
-        const dy = position.y - odomCenterY;
+        // Relatiu en frame ROS (X forward, Y esquerra)
+        const dx_ros = position.x - odomCenterX;
+        const dy_ros = position.y - odomCenterY;
+
         const yawRel = yawAbs - yawOffset;
 
-        lastRobotX = dx;
-        lastRobotY = dy;
+        lastRobotX_ros = dx_ros;
+        lastRobotY_ros = dy_ros;
+
+        // Frame de DISPLAY: X = X_ros, Y = -Y_ros (dreta)
+        lastRobotX = dx_ros;
+        lastRobotY = -dy_ros;
         lastRobotYaw = yawRel;
 
-        // Mostra numèrica
+        // Mostra numèrica en frame display
         document.getElementById('position-x').textContent = lastRobotX.toFixed(2);
         document.getElementById('position-y').textContent = lastRobotY.toFixed(2);
         document.getElementById('rotation-z').textContent =
           (lastRobotYaw * 180 / Math.PI).toFixed(1);
 
-        // Velocitat: de frame robot a frame global (ja alineat amb +X inicial)
-        const velX_robot = twist.linear.x;
-        const velY_robot = twist.linear.y;
-        const velX_global =
-          velX_robot * Math.cos(yawRel) - velY_robot * Math.sin(yawRel);
-        const velY_global =
-          velX_robot * Math.sin(yawRel) + velY_robot * Math.cos(yawRel);
+        // Velocitats:
+        const vx_body = twist.linear.x;  // forward
+        const vy_body = twist.linear.y;  // esquerra (ROS)
+
+        // A món (ROS)
+        const vx_ros =
+          vx_body * Math.cos(yawRel) - vy_body * Math.sin(yawRel);
+        const vy_ros =
+          vx_body * Math.sin(yawRel) + vy_body * Math.cos(yawRel);
+
+        // A display: Y invertit
+        const vx_disp = vx_ros;
+        const vy_disp = -vy_ros;
 
         drawRobotState(lastRobotX, lastRobotY,
-                       velX_global, velY_global,
+                       vx_disp, vy_disp,
                        lastRobotYaw, latestScan);
       });
 
@@ -414,16 +426,14 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    // Converteix coords del món (X forward, Y dreta) a píxels
+    // Converteix coords DISPLAY (X forward, Y dreta) a píxels
     function worldToPixel(x, y, W, H) {
-      // x: forward (m), +x amunt al canvas
-      // y: dreta (m), +y dreta al canvas
       const px = W / 2 + (y / MAP_RESOLUTION);
       const py = H / 2 - (x / MAP_RESOLUTION);
       return [px, py];
     }
 
-    // Dibuixa eixos centrals amb ticks cada 0.40 m
+    // Eixos centrals amb ticks cada 0.40 m
     function drawAxes(ctx, W, H) {
       const cx = W / 2;
       const cy = H / 2;
@@ -445,14 +455,13 @@
       // Ticks X
       const maxXTicks = Math.floor((H / 2) / tickPx);
       for (let i = 1; i <= maxXTicks; i++) {
-        // +X (amunt)
-        let yPos = cy - i * tickPx;
+        let yPos = cy - i * tickPx; // +X
         ctx.beginPath();
         ctx.moveTo(cx - tickLen, yPos);
         ctx.lineTo(cx + tickLen, yPos);
         ctx.stroke();
-        // -X (avall)
-        yPos = cy + i * tickPx;
+
+        yPos = cy + i * tickPx;     // -X
         ctx.beginPath();
         ctx.moveTo(cx - tickLen, yPos);
         ctx.lineTo(cx + tickLen, yPos);
@@ -469,14 +478,13 @@
       // Ticks Y
       const maxYTicks = Math.floor((W / 2) / tickPx);
       for (let i = 1; i <= maxYTicks; i++) {
-        // +Y (dreta)
-        let xPos = cx + i * tickPx;
+        let xPos = cx + i * tickPx; // +Y (dreta)
         ctx.beginPath();
         ctx.moveTo(xPos, cy - tickLen);
         ctx.lineTo(xPos, cy + tickLen);
         ctx.stroke();
-        // -Y (esquerra)
-        xPos = cx - i * tickPx;
+
+        xPos = cx - i * tickPx;     // -Y (esquerra)
         ctx.beginPath();
         ctx.moveTo(xPos, cy - tickLen);
         ctx.lineTo(xPos, cy + tickLen);
@@ -520,10 +528,14 @@
           if (!isFinite(r) || r < rangeMin || r > rangeMax) continue;
 
           const angle = angleMin + i * angleInc;
-          const globalAngle = yawRel + angle;  // en el frame alineat
 
-          const wx = robotX + r * Math.cos(globalAngle);
-          const wy = robotY + r * Math.sin(globalAngle);
+          // En món (ROS relatiu)
+          const wx_ros = lastRobotX_ros + r * Math.cos(yawRel + angle);
+          const wy_ros = lastRobotY_ros + r * Math.sin(yawRel + angle);
+
+          // A display: Y invertit
+          const wx = wx_ros;
+          const wy = -wy_ros;
 
           const [px, py] = worldToPixel(wx, wy, W, H);
           if (px >= 0 && px <= W && py >= 0 && py <= H) {
@@ -537,9 +549,8 @@
       // --- Robot com a rectangle ---
       const [cx, cy] = worldToPixel(robotX, robotY, W, H);
 
-      // Vèrtexs del rectangle en coords robot:
-      const hx = ROBOT_LEN_M / 2;  // semi-longitud (X)
-      const hy = ROBOT_WID_M / 2;  // semi-amplada (Y)
+      const hx = ROBOT_LEN_M / 2; // semi-longitud (X)
+      const hy = ROBOT_WID_M / 2; // semi-amplada (Y)
       const cornersRobot = [
         [ hx,  hy],
         [ hx, -hy],
@@ -547,21 +558,18 @@
         [-hx,  hy]
       ];
 
-      // Rotar + traslladar al món, després a píxels
       ctx.save();
       ctx.beginPath();
       for (let i = 0; i < cornersRobot.length; i++) {
         const [xr, yr] = cornersRobot[i];
-
         const xw = robotX + xr * Math.cos(yawRel) - yr * Math.sin(yawRel);
         const yw = robotY + xr * Math.sin(yawRel) + yr * Math.cos(yawRel);
-
         const [px, py] = worldToPixel(xw, yw, W, H);
         if (i === 0) ctx.moveTo(px, py);
         else ctx.lineTo(px, py);
       }
       ctx.closePath();
-      ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';   // verd translúcid
+      ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 1.5;
       ctx.fill();
@@ -569,7 +577,7 @@
       ctx.restore();
 
       // --- Fletxa orientació (X forward) ---
-      const arrowLen_m = 0.20; // 20 cm
+      const arrowLen_m = 0.20;
       const xTip = robotX + arrowLen_m * Math.cos(yawRel);
       const yTip = robotY + arrowLen_m * Math.sin(yawRel);
       const [ax, ay] = worldToPixel(xTip, yTip, W, H);
@@ -581,11 +589,11 @@
       ctx.strokeStyle = 'blue';
       ctx.stroke();
 
-      // --- Vector velocitat global ---
+      // --- Vector velocitat (en frame display) ---
       const speed = Math.hypot(velX, velY);
       if (speed > 0.01) {
         const angle = Math.atan2(velY, velX);
-        const len_m = Math.min(speed * SPEED_VECTOR_GAIN, 0.5); // màx 0.5 m
+        const len_m = Math.min(speed * SPEED_VECTOR_GAIN, 0.5);
         const vx_m = robotX + len_m * Math.cos(angle);
         const vy_m = robotY + len_m * Math.sin(angle);
         const [vx_px, vy_px] = worldToPixel(vx_m, vy_m, W, H);
@@ -597,7 +605,6 @@
         ctx.strokeStyle = 'red';
         ctx.stroke();
 
-        // punta fletxa
         ctx.save();
         ctx.translate(vx_px, vy_px);
         ctx.rotate(-angle);
