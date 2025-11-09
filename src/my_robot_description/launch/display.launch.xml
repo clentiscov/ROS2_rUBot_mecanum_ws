@@ -13,6 +13,7 @@
 
   <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui">
     <param name="use_sim_time" value="$(var use_sim_time)" />
+    <param name="robot_description" value="$(command 'xacro $(var robot_path)')" />
   </node>
 
   <node pkg="rviz2" exec="rviz2" output="screen" args="-d $(var rviz_config_path)">
