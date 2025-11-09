@@ -4,7 +4,7 @@
     <arg name="x0" default="0.0" description="Initial X position of the robot" />
     <arg name="y0" default="0.0" description="Initial Y position of the robot" />
     <arg name="yaw0" default="0.0" description="Initial Yaw orientation of the robot (radians)" />
-    <arg name="robot" default="rubot/rubot_mecanum.urdf"
+    <arg name="robot" default="rubot/rubot_mecanum_custom.urdf"
          description="Name of the URDF file (e.g., rubot_limo.urdf)" />
     <arg name="custom_world" default="square3m_walls.world"
           description="Path to the Gazebo world file to load" />
