@@ -14,10 +14,11 @@
          value="$(find-pkg-share my_robot_bringup)/worlds/$(var custom_world)" />
     <let name="rviz_config_path"
           value="$(find-pkg-share my_robot_bringup)/rviz/urdf_lidar_cam.rviz" />
-    <node pkg="joint_state_publisher" exec="joint_state_publisher" name="joint_state_publisher">
+    <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui" name="joint_state_publisher_gui">
         <param name="use_sim_time" value="$(var use_sim_time)" />
         <param name="robot_description" value="$(command 'xacro $(var robot_path)')" />
     </node>
+
     <node pkg="robot_state_publisher" exec="robot_state_publisher">
         <param name="robot_description" value="$(command 'xacro $(var robot_path)')" />
         <param name="use_sim_time" value="$(var use_sim_time)" />
@@ -31,7 +32,7 @@
         <arg name="use_sim_time" value="$(var use_sim_time)" />
     </include>
     <node pkg="gazebo_ros" exec="spawn_entity.py"
-          args="-file $(var robot_path) -entity my_robot -x $(var x0) -y $(var y0) -Y $(var yaw0)"/>
+          args="-param robot_description -entity my_robot -x $(var x0) -y $(var y0) -Y $(var yaw0)"/>
 
     <node pkg="rviz2" exec="rviz2" output="screen"
           args="-d $(var rviz_config_path)">
