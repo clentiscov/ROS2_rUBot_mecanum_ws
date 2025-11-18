@@ -1,0 +1,16 @@
+<launch>
+    <node
+        pkg="my_robot_control"
+        exec="my_robot_lab6_challenge_exec"
+        name="safety_move_node"
+        output="screen">
+
+        <!-- Parameters -->
+        <param name="vx" value="0.3"/>
+        <param name="vy" value="0.0"/>
+        <param name="w" value="0.0"/>
+        <param name="td" value="5.0"/>
+        <param name="min_dist" value="0.35"/>
+
+    </node>
+</launch>
