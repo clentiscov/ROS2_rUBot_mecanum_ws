@@ -161,7 +161,7 @@
     </inertial>
   </link> 
 <!-- 2D Camera as a mesh of actual PiCamera -->
-  <joint name="joint_camera" type="continuous">
+  <joint name="joint_camera" type="fixed">
     <origin rpy="0 0 0" xyz="0.130 0.0 0.05"/>
     <parent link="base_link"/>
     <child link="camera"/>
@@ -209,14 +209,14 @@
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
   </link>
-  <joint name="scan_joint" type="continuous">
+  <joint name="scan_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0 0 0.14"/>
     <parent link="base_link"/>
     <child link="base_scan"/>
   </joint>
   <!-- Box part -->
-  <joint name="joint_part" type="continuous">
+  <joint name="joint_part" type="fixed">
     <origin rpy="0 0 0" xyz="-0.10 0.0 0.08"/>
     <parent link="base_link"/>
     <child link="part"/>
@@ -335,7 +335,7 @@
 <!-- Gazebo colors have to be specified here with predefined Gazebo colors -->
 <!-- lower friction with floor -->
   <gazebo reference="base_link">
-    <material>Gazebo/Yellow</material>
+    <material>Gazebo/Blue</material>
     <mu1>0.005</mu1>
     <mu2>0.005</mu2>
   </gazebo>
