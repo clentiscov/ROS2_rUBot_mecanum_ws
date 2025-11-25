@@ -138,17 +138,19 @@ class WallFollower(Node):
         #----------------------------------------------------------
         if min_front < self.base_distance:
             twist.linear.x = 0.0
-            twist.linear.y = 0.0
-            twist.angular.z = self.v_ang * 2.0
+            twist.linear.y = self.v_lin
+            twist.angular.z = 0.0
             action = f"FRONT {min_front:.2f} m → turn LEFT"
 
         #----------------------------------------------------------
         # RULE 2: FRONT-RIGHT obstacle → slow + left
         #----------------------------------------------------------
         elif min_fr_right < self.base_distance:
-            twist.linear.x = 0.0
-            twist.linear.y = 0.0
-            twist.angular.z = self.v_ang * 2.0
+            v_diag = self.v_lin * 0.7
+            twist.linear.x = v_diag
+            twist.linear.y = v_diag
+            twist.angular.z = 0.0
+
             action = f"FRONT-RIGHT {min_fr_right:.2f} m → turn LEFT"
 
         #----------------------------------------------------------
@@ -160,7 +162,7 @@ class WallFollower(Node):
 
             if abs(error) <= self.tol:
                 # Inside band: go straight
-                twist.linear.x = self.v_lin
+                twist.linear.x = self.v_lin 
                 twist.linear.y = 0.0
                 twist.angular.z = 0.0
                 action = (
@@ -196,13 +198,23 @@ class WallFollower(Node):
         elif math.isfinite(min_back_right) and (
             not math.isfinite(min_right) or min_back_right <= min_right
         ):
-            twist.linear.x = self.v_lin * 0.1
-            twist.linear.y = 0.0
-            twist.angular.z = -2.0 * self.v_ang
+            v_diag = self.v_lin * 0.7
+            twist.linear.x = v_diag
+            twist.linear.y = -v_diag
+            twist.angular.z = 0.0
             action = (
                 f"BACK-RIGHT {min_back_right:.2f} m → "
                 f"very slow + STRONG RIGHT turn (2*w)"
             )
+
+        #----------------------------------------------------------
+        # RULE 5: BACK obstacle → turn left
+        #----------------------------------------------------------
+        if min_front < self.base_distance:
+            twist.linear.x = 0.0
+            twist.linear.y = -self.v_lin
+            twist.angular.z = 0.0
+            action = f"FRONT {min_front:.2f} m → turn LEFT"
 
         # if nothing is visible, twist remains zero -> robot stops
 
