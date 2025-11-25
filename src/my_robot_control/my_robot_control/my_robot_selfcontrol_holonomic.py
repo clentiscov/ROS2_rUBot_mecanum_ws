@@ -11,9 +11,9 @@ class RobotSelfControl(Node):
         super().__init__('robot_selfcontrol_node')
 
         # Configurable parameters
-        self.declare_parameter('distance_limit', 0.3)
+        self.declare_parameter('distance_limit', 0.4)
         self.declare_parameter('speed_factor', 1.0)
-        self.declare_parameter('forward_speed', 0.2)
+        self.declare_parameter('forward_speed', 0.1)
         self.declare_parameter('rotation_speed', 0.3)
         self.declare_parameter('time_to_stop', 5.0)
 
@@ -65,7 +65,7 @@ class RobotSelfControl(Node):
         angle_min_deg = scan.angle_min * 180.0 / 3.14159
         angle_increment_deg = scan.angle_increment * 180.0 / 3.14159
 
-        # Filter valid readings within [-150°, 150°]
+        # Filter valid readings within [-180°, 180°]
         custom_range = []
         for i, distance in enumerate(scan.ranges):
             # Angle on robot
@@ -76,7 +76,7 @@ class RobotSelfControl(Node):
                 continue
             if distance < scan.range_min or distance > scan.range_max:
                 continue
-            if -150 < angle_robot_deg < 150:
+            if -180 < angle_robot_deg < 180:
                 custom_range.append((distance, angle_robot_deg))
             else:
                 continue
@@ -92,10 +92,12 @@ class RobotSelfControl(Node):
             zone = "LEFT"
         elif -110 <= angle_closest_distance < -45:
             zone = "RIGHT"
-        elif 110 < angle_closest_distance <= 150:
+        elif 110 < angle_closest_distance <= 170:
             zone = "BACK_LEFT"
-        elif -150 <= angle_closest_distance < -110:
+        elif -170 <= angle_closest_distance < -110:
             zone = "BACK_RIGHT"
+        elif -180 <= angle_closest_distance < -170 or 170 < angle_closest_distance <= 180:
+            zone = "BACK"
         else:
             zone = "OUTSIDE FOV"
 
@@ -115,23 +117,31 @@ class RobotSelfControl(Node):
 
             elif zone == "LEFT":
                 # Obstáculo a la izquierda -> me muevo hacia la derecha
-                self._msg.linear.x = 0.0
-                self._msg.linear.y = -self._forwardSpeed * self._speedFactor
+                self._msg.linear.x = -self._forwardSpeed * self._speedFactor
+                self._msg.linear.y = 0.0
                 self._msg.angular.z = 0.0
 
             elif zone == "RIGHT":
                 # Obstáculo a la derecha -> me muevo hacia la izquierda
-                self._msg.linear.x = 0.0
-                self._msg.linear.y = self._forwardSpeed * self._speedFactor
+                self._msg.linear.x = self._forwardSpeed * self._speedFactor
+                self._msg.linear.y = 0.0
                 self._msg.angular.z = 0.0
 
             elif zone in ["BACK_LEFT", "BACK_RIGHT"]:
                 # Obstáculo por detrás -> sigo hacia delante pero ajusto un poco lateralmente
                 self._msg.linear.x = self._forwardSpeed * self._speedFactor
+                #self._msg.linear.y = -self._forwardSpeed * self._speedFactor
+                self._msg.angular.z = 0.0
                 if zone == "BACK_LEFT":
-                    self._msg.linear.y = -0.5 * self._forwardSpeed * self._speedFactor
+                    self._msg.linear.y = -self._forwardSpeed * self._speedFactor
                 else:  # BACK_RIGHT
-                    self._msg.linear.y = 0.5 * self._forwardSpeed * self._speedFactor
+                    self._msg.linear.y = self._forwardSpeed * self._speedFactor
+                #self._msg.angular.z = 0.0
+
+            elif zone == "BACK":
+                # Obstáculo a la derecha -> me muevo hacia la izquierda
+                self._msg.linear.x = self._forwardSpeed * self._speedFactor
+                self._msg.linear.y = 0.0
                 self._msg.angular.z = 0.0
 
             else:
@@ -140,11 +150,11 @@ class RobotSelfControl(Node):
                 self._msg.linear.y = 0.0
                 self._msg.angular.z = 0.0
 
-        else:
+        #else:
             # Sin obstáculo cerca -> avanzar recto sin movimiento lateral
-            self._msg.linear.x = self._forwardSpeed * self._speedFactor
-            self._msg.linear.y = 0.0
-            self._msg.angular.z = 0.0
+            #self._msg.linear.x = self._forwardSpeed * self._speedFactor
+            #self._msg.linear.y = 0.0
+            #self._msg.angular.z = 0.0
 
 
     def stop(self):
