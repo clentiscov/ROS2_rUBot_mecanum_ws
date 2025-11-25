@@ -32,7 +32,7 @@
         <arg name="use_sim_time" value="$(var use_sim_time)" />
     </include>
     <node pkg="gazebo_ros" exec="spawn_entity.py"
-          args="-param robot_description -entity my_robot -x $(var x0) -y $(var y0) -Y $(var yaw0)"/>
+          args="-file $(var robot_path) -entity my_robot -x $(var x0) -y $(var y0) -z 0.1 -Y $(var yaw0)" />
 
     <node pkg="rviz2" exec="rviz2" output="screen"
           args="-d $(var rviz_config_path)">
