@@ -121,7 +121,7 @@ class WallFollower(Node):
                 FR_RIGHT.append(d)
             elif -110 <= ang < -70:
                 RIGHT.append(d)
-            elif -160 <= ang < -110:
+            elif -180 <= ang < -110:
                 BACK_RIGHT.append(d)
 
         # Minimal distances
@@ -173,7 +173,7 @@ class WallFollower(Node):
             elif error < 0:
                 # Too close to right wall → slow forward + stronger left turn
                 twist.linear.x = self.v_lin * 0.5
-                twist.linear.y = 0.0
+                twist.linear.y = self.v_lin * 0.5
                 twist.angular.z = 0.0
                 action = (
                     f"RIGHT too CLOSE ({min_right:.2f} m < "
@@ -184,7 +184,7 @@ class WallFollower(Node):
             else:
                 # Too far from right wall → slow forward + stronger right turn
                 twist.linear.x = self.v_lin * 0.5
-                twist.linear.y = 0.0
+                twist.linear.y = -self.v_lin * 0.5
                 twist.angular.z = 0.0
                 action = (
                     f"RIGHT too FAR ({min_right:.2f} m > "
