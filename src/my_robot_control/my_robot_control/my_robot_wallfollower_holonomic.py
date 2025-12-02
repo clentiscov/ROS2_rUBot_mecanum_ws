@@ -11,10 +11,10 @@ class WallFollower(Node):
         super().__init__('wall_follower_node')
 
         # Parameters
-        self.declare_parameter('distance_limit', 0.5)    # desired distance to right wall
-        self.declare_parameter('forward_speed', 0.20)    # linear speed
+        self.declare_parameter('distance_limit', 0.3)    # desired distance to right wall
+        self.declare_parameter('forward_speed', 0.24)    # linear speed
         self.declare_parameter('turn_speed', 0.40)       # angular speed
-        self.declare_parameter('time_to_stop', 30.0)     # auto-stop
+        self.declare_parameter('time_to_stop', 50.0)     # auto-stop
         self.declare_parameter('tolerance', 0.05)        # band around base_distance (RIGHT)
 
         self.base_distance = float(self.get_parameter('distance_limit').value)
@@ -121,7 +121,7 @@ class WallFollower(Node):
                 FR_RIGHT.append(d)
             elif -110 <= ang < -70:
                 RIGHT.append(d)
-            elif -180 <= ang < -110:
+            elif -160 <= ang < -110:
                 BACK_RIGHT.append(d)
 
         # Minimal distances
@@ -138,8 +138,8 @@ class WallFollower(Node):
         #----------------------------------------------------------
         if min_front < self.base_distance:
             twist.linear.x = 0.0
-            twist.linear.y = self.v_lin
-            twist.angular.z = 0.0
+            twist.linear.y = 0.0
+            twist.angular.z = self.v_ang * 1.5
             action = f"FRONT {min_front:.2f} m → turn LEFT"
 
         #----------------------------------------------------------
@@ -149,7 +149,7 @@ class WallFollower(Node):
             v_diag = self.v_lin * 0.7
             twist.linear.x = v_diag
             twist.linear.y = v_diag
-            twist.angular.z = 0.0
+            twist.angular.z = self.v_ang * 1
 
             action = f"FRONT-RIGHT {min_fr_right:.2f} m → turn LEFT"
 
@@ -174,7 +174,7 @@ class WallFollower(Node):
                 # Too close to right wall → slow forward + stronger left turn
                 twist.linear.x = self.v_lin * 0.5
                 twist.linear.y = self.v_lin * 0.5
-                twist.angular.z = 0.0
+                twist.angular.z = self.v_ang * 1
                 action = (
                     f"RIGHT too CLOSE ({min_right:.2f} m < "
                     f"{self.base_distance:.2f}-{self.tol:.2f}) → "
@@ -185,7 +185,7 @@ class WallFollower(Node):
                 # Too far from right wall → slow forward + stronger right turn
                 twist.linear.x = self.v_lin * 0.5
                 twist.linear.y = -self.v_lin * 0.5
-                twist.angular.z = 0.0
+                twist.angular.z = -self.v_ang * 1
                 action = (
                     f"RIGHT too FAR ({min_right:.2f} m > "
                     f"{self.base_distance:.2f}+{self.tol:.2f}) → "
@@ -200,7 +200,7 @@ class WallFollower(Node):
         ):
             v_diag = self.v_lin * 0.5
             twist.linear.x = v_diag
-            twist.linear.y = -v_diag
+            twist.linear.y = v_diag
             twist.angular.z = 0.0
             action = (
                 f"BACK-RIGHT {min_back_right:.2f} m → "
