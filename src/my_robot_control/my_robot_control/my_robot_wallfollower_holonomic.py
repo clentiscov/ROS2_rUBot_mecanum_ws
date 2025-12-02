@@ -138,8 +138,8 @@ class WallFollower(Node):
         #----------------------------------------------------------
         if min_front < self.base_distance:
             twist.linear.x = 0.0
-            twist.linear.y = 0.0
-            twist.angular.z = self.v_ang * 1.5
+            twist.linear.y = self.v_lin *0.5
+            twist.angular.z = self.v_ang * 2.5
             action = f"FRONT {min_front:.2f} m → turn LEFT"
 
         #----------------------------------------------------------
