@@ -179,12 +179,12 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.22
+      robot_radius: 0.18 # CANVIAT PER A PODER PASSAR PER PASSADISSOS (CANVIS)
       plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: True #Afegit
-        inflation_radius: 0.4 #1.0
+        inflation_radius: 0.2 #1.0 # CANVIAT PER A PODER PASSAR PER PASSADISSOS (CANVIS)
         cost_scaling_factor: 3.0
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
